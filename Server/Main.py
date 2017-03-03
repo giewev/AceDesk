@@ -103,6 +103,17 @@ def build_event_from_row(query_row):
 	event["name"] = query_row[1]
 	event["description"] = query_row[2]
 	event["start_time"] = query_row[3]
+	add_metadata_to_event(event)
+	return event
+
+def add_metadata_to_event(event):
+	topic_events = c.execute('''Select * from topic_events 
+									left join topics
+										on topic_events.TOPIC_ID = topics.ROWID
+									where topic_events.NAME = (?)''', 
+									(event["name"],))
+	topic_events = list(topic_events)
+	event["topic_name"] = topic_events[0][4]
 
 @app.route("/users")
 def get_users():
