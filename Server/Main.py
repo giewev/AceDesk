@@ -8,8 +8,10 @@ c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS users(
              NAME 				text (255)     	NOT NULL,
              USERNAME			text (255)		NOT NULL,
-             PASSWORD			text (255)	NOT NULL,
-			 CONTACT_INFO  		text (255))''')
+             PASSWORD			text (255)		NOT NULL,
+			 CONTACT_INFO  		text (255),
+			 LONGITUDE			decimal(9,6),
+			 LATITUDE			decimal(8,6))''')
 
 c.execute('''CREATE TABLE IF NOT EXISTS topics(
              NAME 				text (255)     	NOT NULL)''')
@@ -42,6 +44,8 @@ def build_user_from_row(query_row, contact_visible):
 	user["username"] = query_row[1]
 	if contact_visible:
 		user["contact_info"] = query_row[3]
+	user["latitude"] = query_row[4]
+	user["longitude"] = query_row[5]
 
 	add_metadata_to_user(user)
 	return user
@@ -54,7 +58,7 @@ def add_metadata_to_user(user):
 										on user_interests.TOPIC_ID = topics.ROWID
 									where users.USERNAME = (?)''', 
 									(user["username"],))
-	user["interests"] = [x[6] for x in user_interests if x[6] != None]
+	user["interests"] = [x[8] for x in user_interests if x[8] != None]
 
 	user_events = c.execute('''Select * from user_events 
 								left join users 
@@ -63,7 +67,7 @@ def add_metadata_to_user(user):
 									on topic_events.ROWID = user_events.EVENT_ID
 								where users.USERNAME = (?)''', 
 								(user["username"],))
-	user["events"] = [x[7] for x in user_events if x[7] != None]
+	user["events"] = [x[9] for x in user_events if x[9] != None]
 
 	user_friendships = c.execute('''Select * from friendships 
 								left join users as main_users
@@ -173,6 +177,27 @@ def try_create_account(username, password, realname, contact):
 	c.execute('INSERT INTO users VALUES (?,?,?,?)', (realname, username, password, contact))
 	return True
 
+def try_update_coordinates(username, lat, lon):
+	if username == None or lat == None or lon == None:
+		return False
+	c.execute('UPDATE users SET LATITUDE = (?), LONGITUDE = (?) where users.NAME = (?)', lat, lon, username)
+	return True
+
+
+@app.route("/location")
+def update_user_location():
+	success_dict = {"success" : True}
+	failure_dict = {"success" : False}
+
+	user = request.args.get('username')
+	lat = request.args.get('lat')
+	lon = request.args.get('lon')
+	if try_update_coordinates(user, lat, lon):
+		return str(success_dict)
+	else:
+		return str(failure_dict)
+
+
 
 @app.route("/account")
 def create_account():
@@ -188,10 +213,81 @@ def create_account():
 	else:
 		return str(failure_dict)
 
+def try_add_user_interest(username, topic_name):
+	user = list(c.execute('''Select ROWID from users where users.USERNAME = (?)''', (username,)))[0][0]
+	topic = list(c.execute('''Select ROWID from topics where topics.NAME = (?)''', (topic_name,)))[0][0]
+	user_interests = list(c.execute('''Select * from user_interests where user_interests.USER_ID = (?) and user_interests.TOPIC_ID = (?)''', (user, topic)))
+
+	if len(user_interests) > 0:
+		return False
+	else:
+		c.execute('INSERT INTO user_interests VALUES (?,?)', (user, topic))
+		return True
+
+@app.route("/topic/add")
+def add_user_interest():
+	success_dict = {"success" : True}
+	failure_dict = {"success" : False}
+
+	username = request.args.get('username')
+	topic = request.args.get('topic')
+	if username == None or topic == None:
+		return str(failure_dict)
+
+	if try_add_user_interest(username, topic):
+		return str(success_dict)
+	else:
+		return str(failure_dict)
+
+def try_create_topic(name):
+	if name == None:
+		return False
+	c.execute('INSERT INTO topics VALUES (?)', (name,))
+	return True
+
+@app.route("/topic/create")
+def add_topic():
+	success_dict = {"success" : True}
+	failure_dict = {"success" : False}
+
+	name = request.args.get('name')
+	if try_create_topic(name):
+		return str(success_dict)
+	else:
+		return str(failure_dict)
+
+def try_add_event_to_topic(name, start, desc, topic):
+	if name == None or start == None or desc == None or topic == None:
+		return False
+	
+	topic = list(c.execute('''Select ROWID from topics where topics.NAME = (?)''', (topic,)))
+	if len(topic) == 0:
+		return False
+
+	topic = topic[0][0]
+	c.execute('INSERT INTO topic_events VALUES (?,?,?,?)', (topic, name, desc, start))
+	return True
+
+
+@app.route("/topic/events/add")
+def add_event_to_topic():
+	success_dict = {"success" : True}
+	failure_dict = {"success" : False}
+
+	name = request.args.get('name')
+	start = request.args.get('start')
+	desc = request.args.get('desc')
+	topic = request.args.get('topic')
+	if try_add_event_to_topic(name, start, desc, topic):
+		return str(success_dict)
+	else:
+		return str(failure_dict)
+
+
 def insert_test_data():
-	test_users = [	('Ian Fade', 'giewev', "password", '444-444-4444'),
-					('David Harupa', 'dave top', "abcdefg",'555-555-5555'),
-					('Alex Lopez', 'alex', "admin123", '666-666-6666')]
+	test_users = [	('Ian Fade', 'giewev', "password", '444-444-4444', 40.8062, 73.7187),
+					('David Harupa', 'dave top', "abcdefg",'555-555-5555', 40.6062, 73.5187),
+					('Alex Lopez', 'alex', "admin123", '666-666-6666', 40.7062, 73.6187)]
 
 	test_topics = [ ('Switch',),
 					('Xbox',),
@@ -214,7 +310,7 @@ def insert_test_data():
 						(2, 3),
 						(2, 1)]
 
-	c.executemany('INSERT INTO users VALUES (?,?,?,?)', test_users)
+	c.executemany('INSERT INTO users VALUES (?,?,?,?,?,?)', test_users)
 	c.executemany('INSERT INTO topics VALUES (?)', test_topics)
 	c.executemany('INSERT INTO user_interests VALUES (?,?)', test_interests)
 	c.executemany('INSERT INTO topic_events VALUES (?,?,?,?)', test_events)
