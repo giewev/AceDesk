@@ -188,6 +188,33 @@ def create_account():
 	else:
 		return str(failure_dict)
 
+def try_add_user_interest(username, topic_name):
+	user = list(c.execute('''Select ROWID from users where users.USERNAME = (?)''', (username,)))[0][0]
+	topic = list(c.execute('''Select ROWID from topics where topics.NAME = (?)''', (topic_name,)))[0][0]
+	user_interests = list(c.execute('''Select * from user_interests where user_interests.USER_ID = (?) and user_interests.TOPIC_ID = (?)''', (user, topic)))
+	print(user_interests)
+	if len(user_interests) > 0:
+		return False
+	else:
+		c.execute('INSERT INTO user_interests VALUES (?,?)', (user, topic))
+		return True
+
+@app.route("/topic/add")
+def add_user_interest():
+	success_dict = {"success" : True}
+	failure_dict = {"success" : False}
+
+	username = request.args.get('username')
+	topic = request.args.get('topic')
+	if username == None or topic == None:
+		return str(failure_dict)
+
+	if try_add_user_interest(username, topic):
+		return str(success_dict)
+	else:
+		return str(failure_dict)
+
+
 def insert_test_data():
 	test_users = [	('Ian Fade', 'giewev', "password", '444-444-4444'),
 					('David Harupa', 'dave top', "abcdefg",'555-555-5555'),
