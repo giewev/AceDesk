@@ -8,7 +8,7 @@ c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS users(
              NAME 				text (255)     	NOT NULL,
              USERNAME			text (255)		NOT NULL,
-             PASSWORD_HASH		integer(255)	NOT NULL,
+             PASSWORD			text (255)	NOT NULL,
 			 CONTACT_INFO  		text (255))''')
 
 c.execute('''CREATE TABLE IF NOT EXISTS topics(
@@ -77,7 +77,25 @@ def add_metadata_to_user(user):
 def build_topic_from_row(query_row):
 	topic = dict()
 	topic["name"] = query_row[0]
+	add_metadata_to_topic(topic)
 	return topic
+
+def add_metadata_to_topic(topic):
+	user_interests = c.execute('''Select * from user_interests 
+									left join users 
+										on user_interests.USER_ID = users.ROWID
+									left join topics
+										on user_interests.TOPIC_ID = topics.ROWID
+									where topics.NAME = (?)''', 
+									(topic["name"],))
+	topic["users"] = [x[3] for x in user_interests]
+
+	topic_events = c.execute('''Select * from topic_events 
+									left join topics
+										on topic_events.TOPIC_ID = topics.ROWID
+									where topics.NAME = (?)''', 
+									(topic["name"],))
+	topic["events"] = [x[1] for x in topic_events]
 
 def build_event_from_row(query_row):
 	event = dict()
@@ -94,20 +112,20 @@ def get_users():
 
 @app.route("/topics")
 def get_topics():
-	topics = c.execute("SELECT * FROM topics")
+	topics = [x for x in c.execute("SELECT * FROM topics")]
 	topic_rows = [build_topic_from_row(x) for x in topics]
 	return json.dumps(topic_rows)
 
 @app.route("/events")
 def get_events():
-	events = c.execute("SELECT * FROM topic_events")
+	events = [x for x in c.execute("SELECT * FROM topic_events")]
 	event_rows = [build_event_from_row(x) for x in events]
 	return json.dumps(event_rows)
 
 def insert_test_data():
-	test_users = [	('Ian Fade', 'giewev', 1, '444-444-4444'),
-					('David Harupa', 'dave top', 1,'555-555-5555'),
-					('Alex Lopez', 'alex', 1, '666-666-6666')]
+	test_users = [	('Ian Fade', 'giewev', "password", '444-444-4444'),
+					('David Harupa', 'dave top', "abcdefg",'555-555-5555'),
+					('Alex Lopez', 'alex', "admin123", '666-666-6666')]
 
 	test_topics = [ ('Switch',),
 					('Xbox',),
