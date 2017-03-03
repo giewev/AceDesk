@@ -115,10 +115,25 @@ def add_metadata_to_event(event):
 	topic_events = list(topic_events)
 	event["topic_name"] = topic_events[0][4]
 
+def user_is_friend(viewing_user, visible_user):
+	if viewing_user == None:
+		return False
+	user_friendships = c.execute('''Select * from friendships 
+								left join users as main_users
+									on main_users.ROWID = friendships.ALLOWED_USER_ID
+								left join users as visible_users
+									on visible_users.ROWID = friendships.VISIBLE_USER_ID
+								where main_users.USERNAME = (?)
+								and visible_users.USERNAME = (?)''', 
+								(viewing_user, visible_user,))
+	success = len(list(user_friendships)) > 0
+	return success
+
 @app.route("/users")
 def get_users():
+	viewing_user = request.args.get('queryinguser')
 	users = [x for x in c.execute("SELECT * FROM users")]
-	user_rows = [build_user_from_row(x, False) for x in users]
+	user_rows = [build_user_from_row(x, user_is_friend(viewing_user, x[1])) for x in users]
 	return json.dumps(user_rows)
 
 @app.route("/topics")
@@ -196,7 +211,8 @@ def insert_test_data():
 
 	test_friendships = [(1, 2),
 						(1, 3),
-						(2, 3)]
+						(2, 3),
+						(2, 1)]
 
 	c.executemany('INSERT INTO users VALUES (?,?,?,?)', test_users)
 	c.executemany('INSERT INTO topics VALUES (?)', test_topics)
