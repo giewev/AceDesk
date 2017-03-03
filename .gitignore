@@ -95,3 +95,6 @@ configs/
 dwsync.xml
 dw_php_codehinting.config
 *.mno
+
+# App files
+*.db
