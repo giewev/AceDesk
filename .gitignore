@@ -99,3 +99,7 @@ dw_php_codehinting.config
 # App files
 *.db
 *.db-journal
+
+# Java/Android studio
+*.bin
+*.asset
