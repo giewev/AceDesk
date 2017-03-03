@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_profile"
+            android:title="Profile" />
+        <item
+            android:id="@+id/nav_friends"
+            android:title="Friends" />
+
+    </group>
+
+    <item android:title="Topics">
+        <menu>
+            <item
+                android:id="@+id/nav_mytopics"
+                android:title="My Topics" />
+            <item
+                android:id="@+id/nav_searchtopics"
+                android:title="Find Topics" />
+        </menu>
+    </item>
+
+</menu>
