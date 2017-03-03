@@ -103,3 +103,4 @@ dw_php_codehinting.config
 # Java/Android studio
 *.bin
 *.asset
+*.info
