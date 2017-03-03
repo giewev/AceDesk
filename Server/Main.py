@@ -136,9 +136,9 @@ def get_events():
 def password_matches(username, password):
 	if (username == None or password == None):
 		return False
-	topic_events = c.execute('''Select * from users where username = ? and password = ?''', (username, password))
-	topic_events = list(topic_events)
-	return len(topic_events) > 0
+	users = c.execute('''Select * from users where username = ? and password = ?''', (username, password))
+	users = list(users)
+	return len(users) > 0
 
 @app.route("/login")
 def login():
@@ -146,6 +146,29 @@ def login():
 	failure_dict = {"success" : False}
 
 	if password_matches(request.args.get('username'), request.args.get('password')):
+		return str(succuss_dict)
+	else:
+		return str(failure_dict)
+
+def try_create_account(username, password, realname, contact):
+	users = list(c.execute('''Select * from users where username = ?''', (username,)))
+	if len(users) > 0:
+		return False
+
+	c.execute('INSERT INTO users VALUES (?,?,?,?)', (realname, username, password, contact))
+	return True
+
+
+@app.route("/account")
+def create_account():
+	succuss_dict = {"success" : True}
+	failure_dict = {"success" : False}
+
+	new_username = request.args.get('username')
+	new_password = request.args.get('password')
+	new_realname = request.args.get('realname')
+	new_contact = request.args.get('contact')
+	if try_create_account(new_username, new_password, new_realname, new_contact):
 		return str(succuss_dict)
 	else:
 		return str(failure_dict)
