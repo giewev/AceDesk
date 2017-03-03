@@ -44,7 +44,6 @@ def build_user_from_row(query_row, contact_visible):
 	user["username"] = query_row[1]
 	if contact_visible:
 		user["contact_info"] = query_row[3]
-	print(query_row)
 	user["latitude"] = query_row[4]
 	user["longitude"] = query_row[5]
 
@@ -218,7 +217,7 @@ def try_add_user_interest(username, topic_name):
 	user = list(c.execute('''Select ROWID from users where users.USERNAME = (?)''', (username,)))[0][0]
 	topic = list(c.execute('''Select ROWID from topics where topics.NAME = (?)''', (topic_name,)))[0][0]
 	user_interests = list(c.execute('''Select * from user_interests where user_interests.USER_ID = (?) and user_interests.TOPIC_ID = (?)''', (user, topic)))
-	print(user_interests)
+
 	if len(user_interests) > 0:
 		return False
 	else:
@@ -236,6 +235,50 @@ def add_user_interest():
 		return str(failure_dict)
 
 	if try_add_user_interest(username, topic):
+		return str(success_dict)
+	else:
+		return str(failure_dict)
+
+def try_create_topic(name):
+	if name == None:
+		return False
+	c.execute('INSERT INTO topics VALUES (?)', (name,))
+	return True
+
+@app.route("/topic/create")
+def add_topic():
+	success_dict = {"success" : True}
+	failure_dict = {"success" : False}
+
+	name = request.args.get('name')
+	if try_create_topic(name):
+		return str(success_dict)
+	else:
+		return str(failure_dict)
+
+def try_add_event_to_topic(name, start, desc, topic):
+	if name == None or start == None or desc == None or topic == None:
+		return False
+	
+	topic = list(c.execute('''Select ROWID from topics where topics.NAME = (?)''', (topic,)))
+	if len(topic) == 0:
+		return False
+
+	topic = topic[0][0]
+	c.execute('INSERT INTO topic_events VALUES (?,?,?,?)', (topic, name, desc, start))
+	return True
+
+
+@app.route("/topic/events/add")
+def add_event_to_topic():
+	success_dict = {"success" : True}
+	failure_dict = {"success" : False}
+
+	name = request.args.get('name')
+	start = request.args.get('start')
+	desc = request.args.get('desc')
+	topic = request.args.get('topic')
+	if try_add_event_to_topic(name, start, desc, topic):
 		return str(success_dict)
 	else:
 		return str(failure_dict)
