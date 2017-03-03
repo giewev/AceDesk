@@ -5,13 +5,11 @@ conn = sqlite3.connect('data.db')
 
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS users(
-             ID   				integer        	NOT NULL,
-			 NAME 				text (255)     	NOT NULL,
+             NAME 				text (255)     	NOT NULL,
 			 CONTACT_INFO  		text (255))''')
 
 c.execute('''CREATE TABLE IF NOT EXISTS topics(
-             ID   				integer        	NOT NULL,
-			 NAME 				text (255)     	NOT NULL)''')
+             NAME 				text (255)     	NOT NULL)''')
 
 c.execute('''CREATE TABLE IF NOT EXISTS user_interests(
              USER_ID   			integer        	NOT NULL,
@@ -23,7 +21,6 @@ c.execute('''CREATE TABLE IF NOT EXISTS friendships(
 
 c.execute('''CREATE TABLE IF NOT EXISTS topic_events(
              TOPIC_ID   		integer        	NOT NULL,
-			 EVENT_ID 			text (255)    	NOT NULL,
 			 NAME 				text (255)		NOT NULL,
 			 DESCRIPTION		text (255)		NOT NULL,
 			 START_TIME			text (255)		NOT NULL)''')
@@ -36,5 +33,18 @@ c.execute('''CREATE TABLE IF NOT EXISTS user_events(
 def hello():
 	return "Hello World";
 
+@app.route("/users")
+def get_users():
+	users = c.execute("SELECT * FROM users")
+	user_rows = [x for x in users]
+	return str(user_rows)
+
+def insert_test_data():
+	test_users = [	('Ian Fade', '444-444-4444'),
+					('David Harupa', '555-555-5555'),
+					('Alex Lopez', '666-666-6666')]
+	c.executemany('INSERT INTO users VALUES (?,?)', test_users)
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+	insert_test_data()
+	app.run(host='0.0.0.0')
