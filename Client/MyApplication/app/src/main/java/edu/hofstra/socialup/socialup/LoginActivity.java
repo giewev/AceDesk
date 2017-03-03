@@ -85,7 +85,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mPasswordView = (EditText) findViewById(R.id.password);
 
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
+        Button signInButton = (Button) findViewById(R.id.username_sign_in_button);
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
@@ -95,9 +95,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         StrictMode.setThreadPolicy(policy);
 
         URL url = null;
-        String jsonUsers = "";
+        String jsonAuth = "";
         try {
-            url = new URL("http://54.146.138.252:5000/login?username=");
+            url = new URL("http://54.146.138.252:5000/login?username=" + username.toString() + "&password=" +mPasswordView.toString());
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
@@ -110,7 +110,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
                 InputStream in = new BufferedInputStream(urlConnection.getInputStream());
                 Scanner scanner = new Scanner(in).useDelimiter("\\A");
-                jsonUsers = scanner.next();
+                jsonAuth = scanner.next();
             } finally {
                 urlConnection.disconnect();
             }
@@ -119,12 +119,11 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         }
         TextView text = (TextView) findViewById(R.id.profile_text);
         try {
-            JSONArray array = (JSONArray) new JSONTokener(jsonUsers).nextValue();
-            JSONObject user = array.getJSONObject(0);
-            text.append(user.getString("username"));
+            JSONObject auth = (JSONObject) new JSONTokener(jsonAuth).nextValue();
         } catch (JSONException e){
 
         }
+
     }
 
     private void populateAutoComplete() {
@@ -143,7 +142,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             return true;
         }
         if (shouldShowRequestPermissionRationale(READ_CONTACTS)) {
-            Snackbar.make(mEmailView, R.string.permission_rationale, Snackbar.LENGTH_INDEFINITE)
+            Snackbar.make(username, R.string.permission_rationale, Snackbar.LENGTH_INDEFINITE)
                     .setAction(android.R.string.ok, new View.OnClickListener() {
                         @Override
                         @TargetApi(Build.VERSION_CODES.M)
@@ -182,11 +181,11 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         }
 
         // Reset errors.
-        mEmailView.setError(null);
+        username.setError(null);
         mPasswordView.setError(null);
 
         // Store values at the time of the login attempt.
-        String email = mEmailView.getText().toString();
+        String email = username.getText().toString();
         String password = mPasswordView.getText().toString();
 
         boolean cancel = false;
@@ -201,12 +200,12 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         // Check for a valid email address.
         if (TextUtils.isEmpty(email)) {
-            mEmailView.setError(getString(R.string.error_field_required));
-            focusView = mEmailView;
+            username.setError(getString(R.string.error_field_required));
+            focusView = username;
             cancel = true;
         } else if (!isEmailValid(email)) {
-            mEmailView.setError(getString(R.string.error_invalid_email));
-            focusView = mEmailView;
+            username.setError(getString(R.string.error_invalid_email));
+            focusView = username;
             cancel = true;
         }
 
@@ -309,7 +308,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 new ArrayAdapter<>(LoginActivity.this,
                         android.R.layout.simple_dropdown_item_1line, emailAddressCollection);
 
-        mEmailView.setAdapter(adapter);
+        username.setAdapter(adapter);
     }
 
 
