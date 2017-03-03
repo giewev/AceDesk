@@ -133,6 +133,23 @@ def get_events():
 	event_rows = [build_event_from_row(x) for x in events]
 	return json.dumps(event_rows)
 
+def password_matches(username, password):
+	if (username == None or password == None):
+		return False
+	topic_events = c.execute('''Select * from users where username = ? and password = ?''', (username, password))
+	topic_events = list(topic_events)
+	return len(topic_events) > 0
+
+@app.route("/login")
+def login():
+	succuss_dict = {"success" : True}
+	failure_dict = {"success" : False}
+
+	if password_matches(request.args.get('username'), request.args.get('password')):
+		return str(succuss_dict)
+	else:
+		return str(failure_dict)
+
 def insert_test_data():
 	test_users = [	('Ian Fade', 'giewev', "password", '444-444-4444'),
 					('David Harupa', 'dave top', "abcdefg",'555-555-5555'),
