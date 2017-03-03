@@ -98,3 +98,4 @@ dw_php_codehinting.config
 
 # App files
 *.db
+*.db-journal
